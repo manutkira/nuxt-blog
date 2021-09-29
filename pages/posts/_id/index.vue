@@ -15,22 +15,14 @@
 </template>
 
 <script>
+import axios from 'axios'
 export default {
-  asyncData(context, callback){
-    setTimeout(() => {
-      callback(null , {
-        loadedPosts:
-          {
-          id: '1',
-          title: 'First post (ID: ' + context.route.params.id + ')',
-          author: 'Manut',
-          content: 'This is just a testing text to see wether the app is working or not. This is just a dummy text.',
-          updateDate: new Date(),
-          thumbnail: 'https://lh3.googleusercontent.com/proxy/Zzs_g4c7cH_v8yTdOrgR0zSzaC2l5zxMhEcdTSFrYsMshY3F-9tDHBryC9wMxLn9fkYvS1WjaErafOumRzR7HmgNnMmvvz4gmxyOMfqEPnOvXICdPGqwJS9ZpIgcoug',
-          previewText: 'This is first test!'
-          },
-      })
-    }, 500)
+  asyncData(context){
+    return axios.get(process.env.baseUrl + '/posts/' + context.params.id + '.json').then( res => {
+      return {
+        loadedPosts: res.data
+      }
+    }).catch(e => context.error(e))
   }
 }
 </script>

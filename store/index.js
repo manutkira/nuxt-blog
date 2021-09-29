@@ -9,11 +9,18 @@ const createStore = () => {
         mutations: {
             setPosts(state, posts){
                 state.loadedPosts = posts
+            },
+            addPost(state, payload){
+                state.loadedPosts.push(payload)
+            },
+            editPost(state, editPost){
+                const postIndex = state.loadedPosts.findIndex(post => post.id === editPost.id)
+                state.loadedPosts[postIndex] = editPost
             }
         },
         actions: {
             nuxtServerInit(context, payload){
-                return axios.get('https://nuxt-blog-1eeb7-default-rtdb.firebaseio.com/posts.json').then(res => {
+                return axios.get(process.env.baseUrl + '/posts.json').then(res => {
                     const postsArray = []
                     for (const key in res.data){
                         postsArray.push({...res.data[key], id: key})
@@ -22,6 +29,19 @@ const createStore = () => {
                 }).catch(err => {
                     console.log(err);
                 })
+            },
+            addPost(context, post){
+                const createdPost = {...post, updateDate: new Date()}
+                return axios.post(process.env.baseUrl + '/posts.json', createdPost).then(result => {
+                    context.commit('addPost', {...createdPost, id: result.data.name})
+                }).catch(err => {
+                console.log(err);
+                })
+            },
+            editPost(context, editedPost){
+                return axios.put(process.env.baseUrl + '/posts/' + editedPost.id + '.json', editedPost).then(res => 
+                context.commit('editPost', editedPost)
+                ).catch(e => console.log(e))
             },
             setPosts(context, posts){
                 context.commit('setPosts', posts)

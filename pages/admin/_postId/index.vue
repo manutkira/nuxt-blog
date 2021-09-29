@@ -1,28 +1,33 @@
 <template>
     <div class="admin-post-page">
         <section class="update-form">
-            <admin-post-form :post="loadedPost"/>
+            <admin-post-form :post="loadedPosts" @submit="onSubmitted"/>
         </section>
     </div>
 </template>
 
 <script>
+import axios from 'axios'
 import AdminPostForm from '@/components/admin/AdminPostform.vue'
 export default {
     layout: 'admin',
     components: {
         AdminPostForm
     },
-    data(){
-        return{
-            loadedPost: {
-                author: 'Manut',
-                title: 'My fist post!',
-                content: 'just testing the app!',
-                thumbnailLink: 'https://lh3.googleusercontent.com/proxy/Zzs_g4c7cH_v8yTdOrgR0zSzaC2l5zxMhEcdTSFrYsMshY3F-9tDHBryC9wMxLn9fkYvS1WjaErafOumRzR7HmgNnMmvvz4gmxyOMfqEPnOvXICdPGqwJS9ZpIgcoug'
-            }
-        }
-    }
+    asyncData(context){
+    return axios.get(process.env.baseUrl + '/posts/' + context.params.postId + '.json').then( res => {
+      return {
+        loadedPosts: {...res.data, id: context.params.postId}
+      }
+    }).catch(e => context.error(e))
+  },
+  methods: {
+      onSubmitted(editedPost){
+          this.$store.dispatch('editPost', editedPost).then(() => {
+              this.$router.push('/admin')
+          })
+      }
+  }
 }
 </script>
 

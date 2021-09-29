@@ -17,6 +17,8 @@ export default {
     ]
   },
 
+  loading: {color: '#ff2b40',duration: 6000, throttle: 0},
+
   // Global CSS: https://go.nuxtjs.dev/config-css
   css: [
   ],
@@ -38,5 +40,9 @@ export default {
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
+  },
+  
+  env: {
+    baseUrl: process.env.BASE_URL || 'https://nuxt-blog-1eeb7-default-rtdb.firebaseio.com'
   }
 }

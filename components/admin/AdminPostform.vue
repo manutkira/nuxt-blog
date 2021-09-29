@@ -33,7 +33,7 @@ export default {
             type: Object,
             required: false,
         }
-    },
+    },  
     components: {
         AppControlInput,
         AppButton
@@ -53,7 +53,6 @@ export default {
         onSave(){
             //save the post
             this.$emit('submit', this.editedPost)
-            this.$router.push('/')
         },
         onCancel(){
             this.$router.push('/admin')

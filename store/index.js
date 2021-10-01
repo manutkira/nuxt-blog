@@ -1,10 +1,11 @@
 import Vuex from 'vuex'
-import axios from 'axios'
+import Cookies from 'js-cookie'
 
 const createStore = () => {
     return new Vuex.Store({
         state: {
-            loadedPosts: []
+            loadedPosts: [],
+            token: null,
         },
         mutations: {
             setPosts(state, posts){
@@ -16,14 +17,20 @@ const createStore = () => {
             editPost(state, editPost){
                 const postIndex = state.loadedPosts.findIndex(post => post.id === editPost.id)
                 state.loadedPosts[postIndex] = editPost
+            },
+            setToken(state, token){
+                state.token = token
+            },
+            clearToken(state){
+                state.token = null
             }
         },
         actions: {
             nuxtServerInit(context, payload){
-                return axios.get(process.env.baseUrl + '/posts.json').then(res => {
+                return payload.app.$axios.$get('/posts.json').then(data => {
                     const postsArray = []
-                    for (const key in res.data){
-                        postsArray.push({...res.data[key], id: key})
+                    for (const key in data){
+                        postsArray.push({...data[key], id: key})
                     }
                     context.commit('setPosts', postsArray)
                 }).catch(err => {
@@ -32,25 +39,82 @@ const createStore = () => {
             },
             addPost(context, post){
                 const createdPost = {...post, updateDate: new Date()}
-                return axios.post(process.env.baseUrl + '/posts.json', createdPost).then(result => {
-                    context.commit('addPost', {...createdPost, id: result.data.name})
+                return this.$axios.$post(process.env.baseUrl + '/posts.json?auth=' + context.state.token, createdPost).then(data => {
+                    context.commit('addPost', {...createdPost, id: data.name})
                 }).catch(err => {
                 console.log(err);
                 })
             },
             editPost(context, editedPost){
-                return axios.put(process.env.baseUrl + '/posts/' + editedPost.id + '.json', editedPost).then(res => 
+                return this.$axios.$put(process.env.baseUrl + '/posts/' + editedPost.id + '.json?auth=' + context.state.token, editedPost).then(res => 
                 context.commit('editPost', editedPost)
                 ).catch(e => console.log(e))
             },
             setPosts(context, posts){
                 context.commit('setPosts', posts)
+            },
+            authenticateUser(context, payload){
+                let authURL = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + process.env.fbAPIKey
+                if(!payload.isLogin){
+                    authURL = 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + process.env.fbAPIKey
+                }
+                return this.$axios.$post(authURL, {
+                    email: payload.email,
+                    password: payload.password,
+                    returnSecureToken: true
+                }).then (result => {
+
+                    context.commit('setToken', result.idToken)
+                    localStorage.setItem('token', result.idToken)
+                    localStorage.setItem('tokenExpiration', new Date().getTime() + +result.expiresIn * 1000)
+                    Cookies.set('_session', result.idToken)
+                    Cookies.set('expirationDate', new Date().getTime() + +result.expiresIn * 1000)
+                    return this.$axios.$post('http://localhost:3000/api/track-data', {data: 'authenticated'})
+                }).catch(err => {
+                    console.log(err);
+                })
+            },
+            initAuth(vuexContext, req){
+                let token
+                let expirationDate
+                if(req){
+                    if(!req.headers.cookie){
+                        return
+                    }
+                    const jwtCookie = req.headers.cookie.split(';').find(c => c.trim().startsWith('_session='))
+                    if(!jwtCookie){
+                        return
+                    }
+                    token = jwtCookie.split('=')[1]
+                    expirationDate = req.headers.cookie.split(';').find(c => c.trim().startsWith('expirationDate=')).split('=')[1]
+                }else{
+                }
+                token = localStorage.getItem('token')
+                expirationDate = localStorage.getItem('tokenExpiration')
+ 
+                if(new Date().getTime() > +expirationDate || !token){
+                    vuexContext.commit('clearToken')
+                    return
+                }
+                vuexContext.commit('setToken', token)
+            },
+            logout(context){
+                context.commit('clearToken')
+                Cookies.remove('_session')
+                Cookies.remove('expirationDate')
+                if(process.client){
+                    localStorage.removeItem('token')
+                    localStorage.removeItem('tokenExpiration')
+                }
             }
         },
         getters: {
             loadedPosts(state){
                 return state.loadedPosts
-            }
+            },
+            isAuthenticated(state){
+                return state.token != null
+            },
         }
     })
 }

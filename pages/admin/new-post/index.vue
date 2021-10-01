@@ -7,13 +7,13 @@
 </template>
 
 <script>
-import axios from 'axios'
 import AdminPostForm from '@/components/admin/AdminPostform.vue'
 export default {
     layout: 'admin',
+    middleware: ['auth', 'check-auth'],
     components: {
         AdminPostForm
-    },
+    }, 
     methods: {
       onSubmitted(postData){
         this.$store.dispatch('addPost', postData).then(() => {

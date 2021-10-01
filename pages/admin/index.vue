@@ -2,6 +2,7 @@
     <div class="admin-page">
         <section class="new-post">
             <app-button @click="$router.push('/admin/new-post')">Create Post</app-button>
+            <app-button @click="onLogout">Log Out</app-button>
         </section>
         <section class="existing-posts">
             <h1>Existing Posts</h1>
@@ -11,17 +12,18 @@
 </template>
 
 <script>
-import PostList from '@/components/posts/PostList.vue'
-import AppButton from '@/components/UI/AppButton.vue'
 export default {
     layout: 'admin',
-    components: {
-        PostList,
-        AppButton
-    },
+    middleware: ['auth', 'check-auth'],
     computed: {
       loadedPosts(){
         return this.$store.getters.loadedPosts
+      }
+    },
+    methods: {
+      onLogout(){
+        this.$store.dispatch('logout')
+        this.$router.push('/admin/auth')
       }
     }
 }
